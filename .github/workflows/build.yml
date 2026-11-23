@@ -8,10 +8,10 @@ on:
 
 jobs:
   macos:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.24'
       - name: Install Wails
@@ -22,7 +22,7 @@ jobs:
         run: |
           codesign --force --deep -s - "build/bin/Network Checkup.app"
           ditto -c -k --keepParent "build/bin/Network Checkup.app" NetworkCheckup-macOS.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: NetworkCheckup-macOS
           path: NetworkCheckup-macOS.zip
@@ -30,14 +30,14 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.24'
       - name: Build
         shell: pwsh
         run: ./build-windows.ps1
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: NetworkCheckup-Windows
           path: build/bin/*.exe
