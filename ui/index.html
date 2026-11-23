@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Network Checkup</title>
+<style>
+:root{
+  --bg:#f6f7f9;--card:#fff;--ink:#16191d;--muted:#5d6670;--line:#e2e5ea;--soft:#f0f2f5;
+  --good:#1f9d55;--warn:#c98a00;--bad:#d93a3a;--info:#2f6fde;--limited:#8a939d;--accent:#2f6fde;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#111316;--card:#1a1d21;--ink:#e8eaed;--muted:#9aa3ad;--line:#2b3036;--soft:#22262b;
+  --good:#3cc47c;--warn:#e5b13a;--bad:#ff6b6b;--info:#6ea1ff;--limited:#8a939d;--accent:#6ea1ff;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:2;background:var(--card);border-bottom:1px solid var(--line)}
+.bar{max-width:1100px;margin:0 auto;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+h1{font-size:18px;margin:0;flex:1;min-width:160px}
+button{font:inherit;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:7px 14px;border-radius:8px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.5;cursor:default}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.hero>div{flex:1;min-width:0}
+.hero .big{font-size:20px;font-weight:600}
+.hero .meta{color:var(--muted);font-size:13px}
+.lights{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pill{font-size:12px;padding:2px 10px;border-radius:999px;background:var(--soft);display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--limited)}
+.dot.good{background:var(--good)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.info{background:var(--info)}
+h2{font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:24px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;border-left:4px solid var(--limited);min-width:0}
+.card.good{border-left-color:var(--good)}.card.warn{border-left-color:var(--warn)}.card.bad{border-left-color:var(--bad)}.card.info{border-left-color:var(--info)}
+.card h3{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:8px}
+.card .sum{margin:0 0 8px}
+.finding{display:flex;gap:8px;margin:8px 0;font-size:14px}
+.finding .dot{margin-top:6px}
+.finding b{display:block}
+.finding span{color:var(--muted)}
+.limit{font-size:13px;color:var(--muted);background:var(--soft);border-radius:6px;padding:6px 10px;margin-top:8px}
+details{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+summary{cursor:pointer;color:var(--accent);font-size:13px}
+.tbl{overflow-x:auto;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+th,td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td{overflow-wrap:anywhere;min-width:60px}
+th{white-space:nowrap}
+th{color:var(--muted);font-weight:600}
+.tt{font-size:12px;color:var(--muted);margin-top:10px}
+.loading{text-align:center;padding:60px 16px;color:var(--muted)}
+.spin{width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s 1s linear infinite;margin:0 auto 16px}
+@keyframes s{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+  .card.wide{grid-column:1/-1}
+.scan p{margin:6px 0 12px;color:var(--muted)}
+.scan .prog{font-size:13px;color:var(--muted);margin-top:10px;display:flex;gap:10px;align-items:center}
+.scan .prog .spin{width:16px;height:16px;border-width:2px;margin:0}
+.sechead{display:flex;align-items:center;gap:12px}
+.sechead h2{flex:1}
+.sechead button{font-size:13px;padding:4px 10px;margin-top:14px}
+footer{color:var(--muted);font-size:12px;text-align:center;padding:24px 16px}
+@media (max-width:600px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <h1 style="display:flex;align-items:center;gap:10px"><img src="icon.png" width="26" height="26" alt="">Network Checkup</h1>
+  <button id="copy" disabled>Copy Markdown</button>
+  <button id="dl" disabled>Save report…</button>
+  <button id="run" class="primary">Run again</button>
+</div></header>
+<main id="main"><div class="loading"><div class="spin"></div>Checking your connection, router, internet and DNS. This takes about 20 seconds.</div></main>
+<footer>Network Checkup <span id="ver"></span> · Runs locally on this computer. No logins are attempted and nothing is uploaded.</footer>
+<div class="toast" id="toast"></div>
+<script>
+const T = () => window.__TAURI__;
+const invoke = (cmd, args) => T().core.invoke(cmd, args);
+const LABEL = {good:'OK',warn:'Check',bad:'Problem',info:'Info',limited:'Limited'};
+let lastMd = '';
+const LAN_SECTION = 'Local Network Devices & Services';
+let scanning = false;
+function el(tag, attrs, ...kids){
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs||{})) { if (k==='class') e.className=v; else e.setAttribute(k,v); }
+  for (const k of kids.flat()) if (k!=null) e.append(k instanceof Node ? k : document.createTextNode(String(k)));
+  return e;
+}
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),1800); }
+function table(cols, rows){
+  return el('div',{class:'tbl'}, el('table',{}, el('thead',{}, el('tr',{}, cols.map(c=>el('th',{},c)))),
+    el('tbody',{}, rows.map(r=>el('tr',{}, r.map(c=>el('td',{},c)))))));
+}
+function card(r){
+  const wide = r.section===LAN_SECTION;
+  const c = el('div',{class:'card '+r.status+(wide?' wide':'')});
+  c.append(el('h3',{}, el('span',{class:'dot '+r.status,title:LABEL[r.status]}), r.title));
+  c.append(el('p',{class:'sum'}, r.summary||''));
+  for (const f of (r.findings||[])) c.append(el('div',{class:'finding'}, el('span',{class:'dot '+f.status}), el('div',{}, el('b',{},f.title), el('span',{},f.explain))));
+  for (const l of (r.limits||[])) c.append(el('div',{class:'limit'}, 'Limited: '+l));
+  const hasDetail = (r.details&&r.details.length)||(r.tables&&r.tables.some(t=>t.rows&&t.rows.length));
+  if (hasDetail){
+    const d = el('details',{}, el('summary',{}, r.id==='lan-devices'?'Device list':r.id==='lan-services'?'Service list':'Technical details'));
+    if (r.id==='lan-devices') d.open = true;
+    if (r.details&&r.details.length) d.append(table(['Detail','Value'], r.details.map(x=>[x.key,x.value])));
+    for (const t of (r.tables||[])) if (t.rows&&t.rows.length){ d.append(el('div',{class:'tt'},t.title)); d.append(table(t.columns,t.rows)); }
+    d.append(el('div',{class:'tt'}, 'Check took '+r.durationMs+' ms'));
+    c.append(d);
+  }
+  return c;
+}
+function render(s){
+  const m = document.getElementById('main'); m.textContent='';
+  const counts = {bad:0,warn:0,limited:0};
+  for (const r of s.results) for (const f of (r.findings||[])) if (f.status in counts) counts[f.status]++;
+  const head = s.overall==='bad' ? 'Problems found' : s.overall==='warn' ? 'Mostly fine, a few things to check' : 'Your network looks healthy';
+  const hero = el('div',{class:'hero'}, el('span',{class:'dot '+s.overall,style:'width:28px;height:28px'}),
+    el('div',{}, el('div',{class:'big'},head),
+      el('div',{class:'meta'}, `${s.hostname} · ${s.os}/${s.arch} · ${new Date(s.started).toLocaleString()} · ${counts.bad} problem(s), ${counts.warn} to check`),
+      el('div',{class:'lights'}, s.results.map(r=>el('span',{class:'pill'}, el('span',{class:'dot '+r.status}), r.title)))));
+  m.append(hero);
+  let sec=null, grid=null;
+  for (const r of s.results){
+    if (r.section!==sec){
+      sec=r.section;
+      if (sec===LAN_SECTION){
+        const again = el('button',{}, 'Scan again'); again.onclick=scanLAN;
+        m.append(el('div',{class:'sechead'}, el('h2',{},sec), again));
+      } else m.append(el('h2',{},sec));
+      grid=el('div',{class:'grid'}); m.append(grid);
+    }
+    grid.append(card(r));
+  }
+  if (!s.results.some(r=>r.section===LAN_SECTION)){
+    m.append(el('h2',{},LAN_SECTION));
+    const btn = el('button',{class:'primary',id:'scanbtn'}, 'Scan my network');
+    btn.onclick = scanLAN;
+    m.append(el('div',{class:'grid'}, el('div',{class:'card info wide scan',id:'scancard'},
+      el('h3',{}, el('span',{class:'dot info'}), 'Find devices and services on your network'),
+      el('p',{}, 'Lists the devices on your network (router, phones, TVs, printers, cameras and so on), names them where possible, and checks each one for common services such as unencrypted admin pages. It takes about a minute. It never tries a password. Only scan networks you own or manage.'),
+      btn)));
+  }
+}
+async function scanLAN(){
+  if (scanning) return; scanning = true;
+  const m = document.getElementById('main');
+  let host = document.getElementById('scancard');
+  if (!host){
+    // Rescan: replace the existing LAN section with a progress card.
+    host = el('div',{class:'card info wide scan',id:'scancard'});
+    m.append(el('div',{class:'grid'}, host));
+    host.scrollIntoView({behavior:'smooth'});
+  }
+  host.textContent='';
+  const prog = el('span',{}, 'Starting the scan…');
+  host.append(el('h3',{}, el('span',{class:'dot info'}), 'Scanning your network'), el('div',{class:'prog'}, el('div',{class:'spin'}), prog));
+  let off = null;
+  try { off = await T().event.listen('lan-progress', e => { prog.textContent = e.payload; }); } catch {}
+  try{
+    const s = await invoke('scan_lan'); lastMd = s.markdown; render(s);
+    const h = [...document.querySelectorAll('h2')].find(x=>x.textContent===LAN_SECTION); if (h) h.scrollIntoView({behavior:'smooth'});
+  }catch(e){ prog.textContent = 'Scan failed: '+(e&&e.message||e); }
+  if (typeof off === 'function') off();
+  scanning = false;
+}
+async function run(){
+  const b=document.getElementById('run'); b.disabled=true; b.textContent='Running…';
+  document.getElementById('main').innerHTML='<div class="loading"><div class="spin"></div>Checking your connection, router, internet and DNS. This takes about 20 seconds.</div>';
+  try{
+    const s = await invoke('run_checkup'); lastMd = s.markdown; render(s);
+    document.getElementById('copy').disabled=false; document.getElementById('dl').disabled=false;
+  }catch(e){ document.getElementById('main').textContent=''; document.getElementById('main').append(el('div',{class:'loading'}, 'Run failed: '+(e&&e.message||e))); }
+  b.disabled=false; b.textContent='Run again';
+}
+document.getElementById('run').onclick=run;
+document.getElementById('copy').onclick=async()=>{ try{ await navigator.clipboard.writeText(lastMd); toast('Markdown copied'); }catch{ toast('Copy failed; use Save report'); } };
+document.getElementById('dl').onclick=async()=>{ try{ const p = await invoke('save_report', {markdown: lastMd}); if(p) toast('Saved to '+p); }catch(e){ toast('Save failed: '+(e&&e.message||e)); } };
+function start(){ if(window.__TAURI__&&window.__TAURI__.core){ invoke('version').then(v=>{document.getElementById('ver').textContent='v'+v;}).catch(()=>{}); run(); } else setTimeout(start,50); }
+start();
+</script>
+</body>
+</html>
